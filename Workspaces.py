@@ -1,6 +1,14 @@
 import boto3
+from dataclasses import dataclass
 
 LIST_WORKSPACES_PAGE_SIZE = 25
+
+
+@dataclass
+class WorkSpaceStruct:
+    workspaceId: str = ""
+    tags: str = ""
+    markForDeletion: bool = False
 
 
 class WorkSpacesResource:
@@ -13,7 +21,6 @@ class WorkSpacesResource:
             self._set_service(),
             region_name="us-east-1"
         )
-        print("Zeeshan")
 
     # Get Workspaces in an account
     def get_workspaces(self, tags=[], workspaceIds=[]):
@@ -30,7 +37,7 @@ class WorkSpacesResource:
                 for workspace in page['Workspaces']:
                     workspaceIds.append(workspace['WorkspaceId'])
 
-            self.get_workspaces_tags(workspacesIds=workspaceIds)
+            self.get_workspaces_tags(workspacesIds=workspaceIds, tags=tags)
 
         except Exception as e:
             exception = True
@@ -38,18 +45,33 @@ class WorkSpacesResource:
 
         return tags, exception
 
-    # Fetch tags against each workspace
-    def get_workspaces_tags(self, workspacesIds=[]):
+    # Fetch tags against each workspace from service-end since the describe-workspaces doesn't return tags
+    def get_workspaces_tags(self, workspacesIds=[], tags=[]):
         try:
             for workspace in workspacesIds:
                 response = self.client.describe_tags(
                     ResourceId=workspace
                 )
-                print(response)
+                responseTags = response["TagList"]
+                obj = WorkSpaceStruct()
+                obj.workspaceId = workspace
+                obj.tags = response["TagList"]
+                deleteTag = list(
+                    filter(lambda responseTags: responseTags['Key'] == 'auto-delete', responseTags))
+                obj.markForDeletion = True if len(
+                    deleteTag) > 0 and deleteTag[0]['Value'] != 'no' else False
+                tags.append(obj)
         except Exception as e:
             print(e)
 
-        print("Hello I am here")
+    def delete(self, resource):
+        response = self.client.terminate_workspaces(
+            TerminateWorkspaceRequests=[
+                {
+                    'WorkspaceId': 'string'
+                },
+            ]
+        )
 
 
 obj = WorkSpacesResource()
