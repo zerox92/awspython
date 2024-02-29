@@ -78,7 +78,9 @@ class WorkSpacesResource:
                     filter(lambda responseTags: responseTags['Key'] == 'auto-delete', responseTags))
                 workspace.markForDeletion = True if len(
                     deleteTag) > 0 and deleteTag[0]['Value'] != 'no' else False
+            return False
         except Exception as e:
+            return True
             print(e)
 
     def deleteWorkspace(self, workspace: WorkSpaceStruct):
