@@ -23,7 +23,7 @@ class WorkSpacesResource:
         )
 
     # Get Workspaces in an account
-    def get_workspaces(self, tags=[], workspaceIds=[]):
+    def get_workspaces(self, workspaces=[], workspaceIds=[]):
         exception = False
         try:
             paginator = self.client.get_paginator('describe_workspaces')
@@ -35,32 +35,32 @@ class WorkSpacesResource:
 
             for page in response_iterator:
                 for workspace in page['Workspaces']:
-                    workspaceIds.append(workspace['WorkspaceId'])
+                    obj = WorkSpaceStruct()
+                    obj.workspaceId = workspace['WorkspaceId']
+                    workspaces.append(obj)
 
-            self.get_workspaces_tags(workspacesIds=workspaceIds, tags=tags)
+            self.get_workspaces_tags(workspaces=workspaces)
 
         except Exception as e:
             exception = True
             print(e)
 
-        return tags, exception
+        return workspaces, exception
 
     # Fetch tags against each workspace from service-end since the describe-workspaces doesn't return tags
-    def get_workspaces_tags(self, workspacesIds=[], tags=[]):
+    def get_workspaces_tags(self, workspaces=[]):
         try:
-            for workspace in workspacesIds:
+            for workspace in workspaces:
                 response = self.client.describe_tags(
-                    ResourceId=workspace
+                    ResourceId=workspace.workspaceId
                 )
                 responseTags = response["TagList"]
-                obj = WorkSpaceStruct()
-                obj.workspaceId = workspace
-                obj.tags = response["TagList"]
+                workspace.tags = response["TagList"]
                 deleteTag = list(
                     filter(lambda responseTags: responseTags['Key'] == 'auto-delete', responseTags))
-                obj.markForDeletion = True if len(
+                workspace.markForDeletion = True if len(
                     deleteTag) > 0 and deleteTag[0]['Value'] != 'no' else False
-                tags.append(obj)
+                print(workspaces)
         except Exception as e:
             print(e)
 
