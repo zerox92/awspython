@@ -23,7 +23,7 @@ class WorkSpacesResource:
         )
 
     # Get Workspaces in an account
-    def get_workspaces(self, workspaces=[]):
+    def get_workspaces(self, workspaces: WorkSpaceStruct = []):
         exception = False
         try:
             paginator = self.client.get_paginator('describe_workspaces')
@@ -48,7 +48,7 @@ class WorkSpacesResource:
         return workspaces, exception
 
     # Fetch tags against each workspace from service-end since the describe-workspaces doesn't return tags
-    def get_workspaces_tags(self, workspaces=[]):
+    def get_workspaces_tags(self, workspaces: WorkSpaceStruct = []):
         try:
             for workspace in workspaces:
                 response = self.client.describe_tags(
@@ -60,15 +60,15 @@ class WorkSpacesResource:
                     filter(lambda responseTags: responseTags['Key'] == 'auto-delete', responseTags))
                 workspace.markForDeletion = True if len(
                     deleteTag) > 0 and deleteTag[0]['Value'] != 'no' else False
-                print(workspaces)
+            print(workspaces)
         except Exception as e:
             print(e)
 
-    def delete(self, resource):
+    def deleteWorkspace(self, workspace: WorkSpaceStruct):
         response = self.client.terminate_workspaces(
             TerminateWorkspaceRequests=[
                 {
-                    'WorkspaceId': 'string'
+                    'WorkspaceId': workspace.workspaceId
                 },
             ]
         )
