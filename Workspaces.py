@@ -23,7 +23,7 @@ class WorkSpacesResource:
         )
 
     # Get Workspaces in an account
-    def get_workspaces(self, workspaces=[], workspaceIds=[]):
+    def get_workspaces(self, workspaces=[]):
         exception = False
         try:
             paginator = self.client.get_paginator('describe_workspaces')
