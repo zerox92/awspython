@@ -1,7 +1,24 @@
 import boto3
 from dataclasses import dataclass
+from enum import Enum
 
 LIST_WORKSPACES_PAGE_SIZE = 25
+
+
+# States of Workspaces https://docs.aws.amazon.com/workspaces/latest/api/API_Workspace.html
+
+class WorkspaceState(str, Enum):
+    pending = 'PENDING'
+    available = 'AVAILABLE'
+    rebooting = 'REBOOTING'
+    starting = 'STARTING'
+    terminating = 'TERMINATING'
+    terminated = 'TERMINATED'
+    suspended = 'SUSPENDED'
+    updating = 'UPDATING'
+    stopping = 'STOPPING'
+    stopped = 'STOPPED'
+    error = 'ERROR'
 
 
 @dataclass
@@ -9,6 +26,7 @@ class WorkSpaceStruct:
     workspaceId: str = ""
     tags: str = ""
     markForDeletion: bool = False
+    state: WorkspaceState = ""
 
 
 class WorkSpacesResource:
@@ -37,13 +55,13 @@ class WorkSpacesResource:
                 for workspace in page['Workspaces']:
                     obj = WorkSpaceStruct()
                     obj.workspaceId = workspace['WorkspaceId']
+                    obj.state = workspace['State']
                     workspaces.append(obj)
 
-            self.get_workspaces_tags(workspaces=workspaces)
+            exception = self.get_workspaces_tags(workspaces=workspaces)
 
         except Exception as e:
             exception = True
-            print(e)
 
         return workspaces, exception
 
@@ -60,11 +78,11 @@ class WorkSpacesResource:
                     filter(lambda responseTags: responseTags['Key'] == 'auto-delete', responseTags))
                 workspace.markForDeletion = True if len(
                     deleteTag) > 0 and deleteTag[0]['Value'] != 'no' else False
-            print(workspaces)
         except Exception as e:
             print(e)
 
     def deleteWorkspace(self, workspace: WorkSpaceStruct):
+        # Check here if workspace is suspended from workspace.state
         response = self.client.terminate_workspaces(
             TerminateWorkspaceRequests=[
                 {
